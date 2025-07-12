@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     vim \
     sudo \
     build-essential \
+    tmux \
     && rm -rf /var/lib/apt/lists/*
 
 # 创建SSH目录
@@ -30,8 +31,7 @@ RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin prohibit-passwo
     sed -i 's/ChallengeResponseAuthentication yes/ChallengeResponseAuthentication no/' /etc/ssh/sshd_config && \
     sed -i 's/UsePAM yes/UsePAM no/' /etc/ssh/sshd_config
 
-# 复制SSH公钥（必须提供，否则无法SSH连接）
-ARG SSH_PUBLIC_KEY
+# 复制SSH公钥
 RUN if [ -z "$SSH_PUBLIC_KEY" ]; then \
         echo "错误: SSH_PUBLIC_KEY 构建参数是必需的！" && \
         echo "请在构建时提供你的SSH公钥：" && \
