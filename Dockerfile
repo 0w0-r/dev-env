@@ -1,27 +1,31 @@
-FROM ubuntu:latest
+FROM debian:latest
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 更换为清华源
-RUN sed -i 's@//.*archive.ubuntu.com@//mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list && \
-    sed -i 's/security.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
+# 更换为中科大源
+RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources
 
 # 安装必要的软件包
 RUN apt-get update && apt-get install -y \
     openssh-server \
+    python3 \
+    unzip \
     curl \
     git \
     vim \
     sudo \
+    screen \
+    zsh \
+    fzf \
     build-essential \
-    tmux \
     && rm -rf /var/lib/apt/lists/*
+
 
 # 创建SSH目录
 RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh
-
+RUN mkdir -p /opt
 # 配置SSH服务
 RUN mkdir /var/run/sshd
-
+RUN git config --global url."https://gh-proxy.com/https://github.com/".insteadOf https://github.com/
 # 配置SSH安全设置：禁用密码登录，仅允许密钥认证
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config && \
     sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
@@ -30,19 +34,27 @@ RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin prohibit-passwo
     sed -i 's/#ChallengeResponseAuthentication yes/ChallengeResponseAuthentication no/' /etc/ssh/sshd_config && \
     sed -i 's/ChallengeResponseAuthentication yes/ChallengeResponseAuthentication no/' /etc/ssh/sshd_config && \
     sed -i 's/UsePAM yes/UsePAM no/' /etc/ssh/sshd_config
+# zoxide
+RUN curl -sSfL https://gh-proxy.com/https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
+# uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# 复制SSH公钥
-RUN if [ -z "$SSH_PUBLIC_KEY" ]; then \
-        echo "错误: SSH_PUBLIC_KEY 构建参数是必需的！" && \
-        echo "请在构建时提供你的SSH公钥：" && \
-        echo "docker build --build-arg SSH_PUBLIC_KEY=\"$(cat ~/.ssh/id_ed25519.pub)\" ." && \
-        exit 1; \
-    fi && \
-    echo "🔑 设置SSH公钥 (前30字符): $(echo "$SSH_PUBLIC_KEY" | cut -c1-30)..." && \
-    echo "$SSH_PUBLIC_KEY" > /root/.ssh/authorized_keys && \
-    chmod 600 /root/.ssh/authorized_keys && \
-    chown root:root /root/.ssh/authorized_keys && \
-    echo "✅ SSH公钥设置完成"
+RUN repo="sxyazi/yazi" && asset="x86_64-unknown-linux-musl.zip" \
+    && url=$(curl -s https://api.github.com/repos/$repo/releases/latest \
+    | grep "browser_download_url" \
+    | grep "$asset" \
+    | cut -d '"' -f 4) \
+    && curl -L -o /tmp/yazi.zip "https://gh-proxy.com/${url}" \
+    && unzip -o /tmp/yazi.zip -d /opt \
+    && rm /tmp/yazi.zip
+
+RUN ln -sf /opt/yazi-x86_64-unknown-linux-musl/yazi /usr/local/bin/yazi
+
+RUN mkdir -p /usr/share/zsh/site-functions \
+    && cp /opt/yazi-x86_64-unknown-linux-musl/completions/_yazi /usr/share/zsh/site-functions/
+
+
+RUN chsh -s /bin/zsh
 
 # 暴露SSH端口
 EXPOSE 22
