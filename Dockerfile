@@ -7,13 +7,12 @@ RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debi
 # 安装必要的软件包
 RUN apt-get update && apt-get install -y \
     openssh-server \
-    python3 \
     unzip \
     curl \
     git \
     vim \
     sudo \
-    screen \
+    tmux \
     zsh \
     fzf \
     build-essential \
@@ -22,6 +21,8 @@ RUN apt-get update && apt-get install -y \
 
 # 创建SSH目录
 RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh
+COPY configs/authorized_keys /root/.ssh/authorized_keys
+RUN chmod 600 /root/.ssh/authorized_keys
 RUN mkdir -p /opt
 # 配置SSH服务
 RUN mkdir -p /var/run/sshd && chmod 0755 /var/run/sshd
@@ -53,6 +54,8 @@ RUN ln -sf /opt/yazi-x86_64-unknown-linux-musl/yazi /usr/local/bin/yazi
 RUN mkdir -p /usr/share/zsh/site-functions \
     && cp /opt/yazi-x86_64-unknown-linux-musl/completions/_yazi /usr/share/zsh/site-functions/
 
+COPY configs/.zshrc /root/.zshrc
+RUN chmod 644 /root/.zshrc
 
 RUN chsh -s /bin/zsh
 
@@ -60,4 +63,5 @@ RUN chsh -s /bin/zsh
 EXPOSE 22
 
 # 启动SSH服务
-CMD ["/usr/sbin/sshd", "-D"]
+# CMD ["/usr/sbin/sshd", "-D"]
+CMD ["/bin/zsh"]
