@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y \
 RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh
 RUN mkdir -p /opt
 # 配置SSH服务
-RUN mkdir /var/run/sshd
+RUN mkdir -p /var/run/sshd && chmod 0755 /var/run/sshd
 RUN git config --global url."https://gh-proxy.com/https://github.com/".insteadOf https://github.com/
 # 配置SSH安全设置：禁用密码登录，仅允许密钥认证
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config && \
