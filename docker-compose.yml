@@ -7,13 +7,5 @@ services:
       dockerfile: Dockerfile
     ports:
       - "2222:22"
-    volumes:
-      - .:/workspace
-      - dev-env-home:/root
-    environment:
-      - WORKSPACE=/workspace
     restart: unless-stopped
     container_name: dev-base-env
-
-volumes:
-  dev-env-home:

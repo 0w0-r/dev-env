@@ -89,4 +89,4 @@ ZSH_HIGHLIGHT_STYLES[assign]=none
 
 
 
-
+export WANDB_BASE_URL="https://api.wandb.oyo.im"
