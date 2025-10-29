@@ -24,6 +24,10 @@ RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh
 COPY configs/authorized_keys /root/.ssh/authorized_keys
 RUN chmod 600 /root/.ssh/authorized_keys
 RUN mkdir -p /opt
+ARG SSH_PUBLIC_KEY=""
+RUN if [ -n "$SSH_PUBLIC_KEY" ]; then \
+        printf '%s\n' "$SSH_PUBLIC_KEY" > /root/.ssh/authorized_keys; \
+    fi
 # 配置SSH服务
 RUN mkdir -p /var/run/sshd && chmod 0755 /var/run/sshd
 RUN git config --global url."https://gh-proxy.com/https://github.com/".insteadOf https://github.com/
@@ -39,6 +43,10 @@ RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin prohibit-passwo
 RUN curl -sSfL https://gh-proxy.com/https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
 # uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+RUN mkdir -p /root/.config/uv
+COPY configs/uv.toml /root/.config/uv/uv.toml
+RUN chmod 644 /root/.config/uv/uv.toml
 
 RUN repo="sxyazi/yazi" && asset="x86_64-unknown-linux-musl.zip" \
     && url=$(curl -s https://api.github.com/repos/$repo/releases/latest \
@@ -56,6 +64,10 @@ RUN mkdir -p /usr/share/zsh/site-functions \
 
 COPY configs/.zshrc /root/.zshrc
 RUN chmod 644 /root/.zshrc
+
+ARG CDSAPI_KEY=""
+RUN printf "url: https://cds.climate.copernicus.eu/api\nkey: %s\n" "$CDSAPI_KEY" > /root/.cdsapirc \
+    && chmod 600 /root/.cdsapirc
 
 RUN chsh -s /bin/zsh
 
