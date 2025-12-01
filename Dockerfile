@@ -17,8 +17,6 @@ RUN echo "TARGETARCH = ${TARGETARCH}" && \
 # 安装必要的软件包
 RUN pacman -Syyu --noconfirm \
     openssh \
-    unzip \
-    curl \
     git \
     sudo \
     tmux \
@@ -26,9 +24,7 @@ RUN pacman -Syyu --noconfirm \
 
 RUN sudo pacman -S --noconfirm fish neovim yazi uv ffmpeg 7zip jq poppler fd ripgrep fzf zoxide resvg imagemagick
 # 创建SSH目录
-RUN mkdir -p /opt
 RUN git config --global url."https://gh-proxy.com/https://github.com/".insteadOf https://github.com/
-
 # uv
 RUN mkdir -p /root/.config/uv
 COPY configs/uv.toml /root/.config/uv/uv.toml
@@ -36,6 +32,8 @@ RUN chmod 644 /root/.config/uv/uv.toml
 
 
 RUN chsh -s /bin/fish
+RUN ssh-keygen -A
+RUN /usr/sbin/sshd
 
 # 暴露SSH端口
 EXPOSE 22
