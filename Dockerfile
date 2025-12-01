@@ -3,14 +3,16 @@ FROM archlinux:base
 # 更换为清华源
 ARG TARGETARCH
 
-RUN if [ "$TARGETARCH" = "amd64" ]; then \
+RUN echo "TARGETARCH = ${TARGETARCH}" && \
+    if [ "$TARGETARCH" = "amd64" ]; then \
         echo "x86_64 build"; \
-        sed -i '1i Server = https://mirrors.tuna.tsinghua.edu.cn/archlinux/\$repo/os/\$arch' /etc/pacman.d/mirrorlist \
+        sed -i '1i Server = https://mirrors.tuna.tsinghua.edu.cn/archlinux/\$repo/os/\$arch' /etc/pacman.d/mirrorlist; \
     elif [ "$TARGETARCH" = "arm64" ]; then \
         echo "ARM64 build"; \
-        sed -i '1i Server = https://mirrors.tuna.tsinghua.edu.cn/archlinuxarm/\$arch/\$repo' /etc/pacman.d/mirrorlist \
+        sed -i '1i Server = https://mirrors.tuna.tsinghua.edu.cn/archlinuxarm/\$arch/\$repo' /etc/pacman.d/mirrorlist; \
     else \
-        echo "Unknown arch $TARGETARCH"; exit 1; \
+        echo "Unknown arch: $TARGETARCH"; \
+        exit 1; \
     fi
 # 安装必要的软件包
 RUN pacman -Syyu --noconfirm \
