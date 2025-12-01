@@ -1,79 +1,42 @@
-FROM debian:latest
-ENV DEBIAN_FRONTEND=noninteractive
+FROM archlinux:base
 
-# 更换为中科大源
-RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources
+# 更换为清华源
+ARG TARGETARCH
 
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+        echo "x86_64 build"; \
+        sed -i '1i Server = https://mirrors.tuna.tsinghua.edu.cn/archlinux/\$repo/os/\$arch' /etc/pacman.d/mirrorlist \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+        echo "ARM64 build"; \
+        sed -i '1i Server = https://mirrors.tuna.tsinghua.edu.cn/archlinuxarm/\$arch/\$repo' /etc/pacman.d/mirrorlist \
+    else \
+        echo "Unknown arch $TARGETARCH"; exit 1; \
+    fi
 # 安装必要的软件包
-RUN apt-get update && apt-get install -y \
-    openssh-server \
+RUN pacman -Syyu --noconfirm \
+    openssh \
     unzip \
     curl \
     git \
-    vim \
     sudo \
     tmux \
-    zsh \
-    fzf \
-    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-
+RUN sudo pacman -S --noconfirm fish neovim yazi uv ffmpeg 7zip jq poppler fd ripgrep fzf zoxide resvg imagemagick
 # 创建SSH目录
-RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh
-COPY configs/authorized_keys /root/.ssh/authorized_keys
-RUN chmod 600 /root/.ssh/authorized_keys
 RUN mkdir -p /opt
-ARG SSH_PUBLIC_KEY=""
-RUN if [ -n "$SSH_PUBLIC_KEY" ]; then \
-        printf '%s\n' "$SSH_PUBLIC_KEY" > /root/.ssh/authorized_keys; \
-    fi
-# 配置SSH服务
-RUN mkdir -p /var/run/sshd && chmod 0755 /var/run/sshd
 RUN git config --global url."https://gh-proxy.com/https://github.com/".insteadOf https://github.com/
-# 配置SSH安全设置：禁用密码登录，仅允许密钥认证
-RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config && \
-    sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
-    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config && \
-    sed -i 's/PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config && \
-    sed -i 's/#ChallengeResponseAuthentication yes/ChallengeResponseAuthentication no/' /etc/ssh/sshd_config && \
-    sed -i 's/ChallengeResponseAuthentication yes/ChallengeResponseAuthentication no/' /etc/ssh/sshd_config && \
-    sed -i 's/UsePAM yes/UsePAM no/' /etc/ssh/sshd_config
-# zoxide
-RUN curl -sSfL https://gh-proxy.com/https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
-# uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
+# uv
 RUN mkdir -p /root/.config/uv
 COPY configs/uv.toml /root/.config/uv/uv.toml
 RUN chmod 644 /root/.config/uv/uv.toml
 
-RUN repo="sxyazi/yazi" && asset="x86_64-unknown-linux-musl.zip" \
-    && url=$(curl -s https://api.github.com/repos/$repo/releases/latest \
-    | grep "browser_download_url" \
-    | grep "$asset" \
-    | cut -d '"' -f 4) \
-    && curl -L -o /tmp/yazi.zip "https://gh-proxy.com/${url}" \
-    && unzip -o /tmp/yazi.zip -d /opt \
-    && rm /tmp/yazi.zip
 
-RUN ln -sf /opt/yazi-x86_64-unknown-linux-musl/yazi /usr/local/bin/yazi
-
-RUN mkdir -p /usr/share/zsh/site-functions \
-    && cp /opt/yazi-x86_64-unknown-linux-musl/completions/_yazi /usr/share/zsh/site-functions/
-
-COPY configs/.zshrc /root/.zshrc
-RUN chmod 644 /root/.zshrc
-
-ARG CDSAPI_KEY=""
-RUN printf "url: https://cds.climate.copernicus.eu/api\nkey: %s\n" "$CDSAPI_KEY" > /root/.cdsapirc \
-    && chmod 600 /root/.cdsapirc
-
-RUN chsh -s /bin/zsh
+RUN chsh -s /bin/fish
 
 # 暴露SSH端口
 EXPOSE 22
 
 # 启动SSH服务
-# CMD ["/usr/sbin/sshd", "-D"]
-CMD ["/bin/zsh"]
+CMD ["/bin/fish"]
