@@ -7,7 +7,8 @@ ENV TZ=Asia/Shanghai \
     PYTHONUNBUFFERED=1 \
     UV_NO_CACHE=1\
     UV_NO_DEV=1\
-    UV_NO_EDITABLE=1
+    UV_NO_EDITABLE=1\
+    UV_VENV_DIR=/venv
 # 更换为清华源
 ARG TARGETARCH
 
@@ -33,6 +34,8 @@ RUN pacman -Syyu --noconfirm \
 RUN sudo pacman -S --noconfirm fish neovim yazi uv ffmpeg 7zip jq poppler fd ripgrep fzf zoxide resvg imagemagick
 # 创建SSH目录
 RUN git config --global url."https://gh-proxy.com/https://github.com/".insteadOf https://github.com/
+RUN sed -i 's/AllowAgentForwarding no/AllowAgentForwarding yes/' /etc/ssh/sshd_config
+
 # uv
 RUN mkdir -p /root/.config/uv
 COPY configs/uv.toml /root/.config/uv/uv.toml
